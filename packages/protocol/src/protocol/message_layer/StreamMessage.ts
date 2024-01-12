@@ -5,10 +5,10 @@ import { validateIsNotEmptyByteArray, validateIsString, validateIsType } from '.
 
 import MessageRef from './MessageRef'
 import MessageID from './MessageID'
-import EncryptedGroupKey from './EncryptedGroupKey'
 import { StreamID } from '../../utils/StreamID'
 import { StreamPartID } from '../../utils/StreamPartID'
 import { EthereumAddress, binaryToUtf8 } from '@streamr/utils'
+import { EncryptedGroupKey } from './groupKeys'
 
 export enum StreamMessageType {
     MESSAGE = 27,
@@ -118,7 +118,6 @@ export default class StreamMessage {
         validateIsString('groupKeyId', groupKeyId, this.encryptionType !== EncryptionType.AES)
         this.groupKeyId = groupKeyId
 
-        validateIsType('newGroupKey', newGroupKey, 'EncryptedGroupKey', EncryptedGroupKey, true)
         this.newGroupKey = newGroupKey
 
         validateIsType('signature', signature, 'Uint8Array', Uint8Array)

@@ -7,11 +7,7 @@ import {
     StreamID,
     EncryptionType as OldEncryptionType,
     SignatureType as OldSignatureType,
-    ContentType as OldContentType,
-    serializeGroupKeyRequest as serializeOldGroupKeyRequest,
-    serializeGroupKeyResponse as serializeOldGroupKeyResponse,
-    deserializeGroupKeyRequest as deserializeOldGroupKeyRequest,
-    deserializeGroupKeyResponse as deserializeOldGroupKeyResponse
+    ContentType as OldContentType
 } from '@streamr/protocol'
 import {
     ContentType,
@@ -25,7 +21,7 @@ import {
     StreamMessageType,
     MessageID
 } from '../../../proto/packages/trackerless-network/protos/NetworkRpc'
-import { toEthereumAddress, binaryToHex, hexToBinary } from '@streamr/utils'
+import { toEthereumAddress, binaryToHex, hexToBinary, utf8ToBinary } from '@streamr/utils'
 import { GroupKeyRequestTranslator } from './GroupKeyRequestTranslator'
 import { GroupKeyResponseTranslator } from './GroupKeyResponseTranslator'
 
@@ -83,12 +79,12 @@ export class StreamMessageTranslator {
             messageType = StreamMessageType.MESSAGE
         } else if (msg.messageType === OldStreamMessageType.GROUP_KEY_REQUEST) {
             content = GroupKeyRequest.toBinary(
-                GroupKeyRequestTranslator.toProtobuf(deserializeOldGroupKeyRequest(msg.content))
+                GroupKeyRequestTranslator.toProtobuf(msg.getParsedContent() as any) // TODO: fix with StreamMessage type generics
             )
             messageType = StreamMessageType.GROUP_KEY_REQUEST
         } else if (msg.messageType === OldStreamMessageType.GROUP_KEY_RESPONSE) {
             content = GroupKeyResponse.toBinary(
-                GroupKeyResponseTranslator.toProtobuf(deserializeOldGroupKeyResponse(msg.content))
+                GroupKeyResponseTranslator.toProtobuf(msg.getParsedContent() as any) // TODO: fix with StreamMessage type generics
             )
             messageType = StreamMessageType.GROUP_KEY_RESPONSE
         } else {
@@ -142,7 +138,7 @@ export class StreamMessageTranslator {
             try {
                 const parsedRequest = GroupKeyRequest.fromBinary(msg.content)
                 const oldGroupKeyRequest = GroupKeyRequestTranslator.toClientProtocol(parsedRequest)
-                content = serializeOldGroupKeyRequest(oldGroupKeyRequest)
+                content = utf8ToBinary(JSON.stringify(oldGroupKeyRequest))
             } catch (err) {
                 throw new Error(`invalid group key request: ${err}`)
             }
@@ -151,7 +147,7 @@ export class StreamMessageTranslator {
             try {
                 const parsedResponse = GroupKeyResponse.fromBinary(msg.content)
                 const oldGroupKeyResponse = GroupKeyResponseTranslator.toClientProtocol(parsedResponse)
-                content = serializeOldGroupKeyResponse(oldGroupKeyResponse)
+                content = utf8ToBinary(JSON.stringify(oldGroupKeyResponse))
             } catch (err) {
                 throw new Error(`invalid group key response: ${err}`)
             }
@@ -172,10 +168,10 @@ export class StreamMessageTranslator {
         }
         let newGroupKey: OldEncryptedGroupKey | undefined = undefined
         if (msg.newGroupKey) {
-            newGroupKey = new OldEncryptedGroupKey(
-                msg.newGroupKey.id,
-                msg.newGroupKey.data,
-            )
+            newGroupKey = {
+                groupKeyId: msg.newGroupKey.id,
+                data: msg.newGroupKey.data,
+            }
         }
         const translated = new OldStreamMessage({
             messageId,

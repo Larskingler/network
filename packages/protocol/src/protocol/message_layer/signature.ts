@@ -1,8 +1,8 @@
-import EncryptedGroupKey from './EncryptedGroupKey'
 import MessageID from './MessageID'
 import MessageRef from './MessageRef'
 import { binaryToHex, binaryToUtf8 } from '@streamr/utils'
 import { EncryptionType, SignatureType } from './StreamMessage'
+import { EncryptedGroupKey } from './groupKeys'
 
 const serializeGroupKey = ({ groupKeyId, data }: EncryptedGroupKey): string => {
     return JSON.stringify([groupKeyId, binaryToHex(data)])

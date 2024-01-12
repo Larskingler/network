@@ -1,4 +1,4 @@
-import { GroupKeyResponse as OldGroupKeyResponse, EncryptedGroupKey as OldEncryptedGroupKey } from '@streamr/protocol'
+import { GroupKeyResponse as OldGroupKeyResponse } from '@streamr/protocol'
 import { GroupKey, GroupKeyResponse } from '../../../proto/packages/trackerless-network/protos/NetworkRpc'
 import { toEthereumAddress, binaryToHex, hexToBinary } from '@streamr/utils'
 
@@ -6,30 +6,24 @@ import { toEthereumAddress, binaryToHex, hexToBinary } from '@streamr/utils'
 export class GroupKeyResponseTranslator {
 
     static toProtobuf(msg: OldGroupKeyResponse): GroupKeyResponse {
-
-        const groupKeys = msg.encryptedGroupKeys.map((groupKey) => {
-            return {
-                data: groupKey.data,
-                id: groupKey.groupKeyId
-            }
-        })
-        const translated: GroupKeyResponse = {
-            recipientId: hexToBinary(msg.recipient),
+        return {
             requestId: msg.requestId,
-            groupKeys
+            recipientId: hexToBinary(msg.recipient),
+            groupKeys: msg.encryptedGroupKeys.map((groupKey) => ({
+                id: groupKey.groupKeyId,
+                data: groupKey.data
+            }))
         }
-        return translated
     }
 
     static toClientProtocol(msg: GroupKeyResponse): OldGroupKeyResponse {
-        const encryptedGroupKeys = msg.groupKeys.map((groupKey: GroupKey) => new OldEncryptedGroupKey(
-            groupKey.id,
-            groupKey.data,
-        ))
-        return new OldGroupKeyResponse({
+        return {
             requestId: msg.requestId,
             recipient: toEthereumAddress(binaryToHex(msg.recipientId, true)),
-            encryptedGroupKeys
-        })
+            encryptedGroupKeys: msg.groupKeys.map((groupKey: GroupKey) => ({
+                groupKeyId: groupKey.id,
+                data: groupKey.data
+            }))
+        }
     }
 }

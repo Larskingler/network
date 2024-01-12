@@ -2,9 +2,7 @@ import {
     StreamMessage,
     StreamMessageError,
     StreamMessageType,
-    createSignaturePayload,
-    deserializeGroupKeyRequest,
-    deserializeGroupKeyResponse,
+    createSignaturePayload, GroupKeyRequest, GroupKeyResponse
 } from '@streamr/protocol'
 import { EthereumAddress } from '@streamr/utils'
 import { StreamRegistry } from '../registry/StreamRegistry'
@@ -40,7 +38,7 @@ const doValidate = (streamMessage: StreamMessage, streamRegistry: StreamRegistry
         case StreamMessageType.GROUP_KEY_REQUEST:
             return validateGroupKeyMessage(
                 streamMessage,
-                deserializeGroupKeyRequest(streamMessage.content).recipient,
+                (streamMessage.getParsedContent() as any as GroupKeyRequest).recipient, // TODO: fix with StreamMessage type generics
                 streamMessage.getPublisherId(),
                 streamRegistry
             )
@@ -48,7 +46,7 @@ const doValidate = (streamMessage: StreamMessage, streamRegistry: StreamRegistry
             return validateGroupKeyMessage(
                 streamMessage,
                 streamMessage.getPublisherId(),
-                deserializeGroupKeyResponse(streamMessage.content).recipient,
+                (streamMessage.getParsedContent() as any as GroupKeyResponse).recipient, // TODO: fix with StreamMessage type generics
                 streamRegistry
             )
         default:

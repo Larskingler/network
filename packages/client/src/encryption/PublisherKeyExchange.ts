@@ -1,19 +1,15 @@
 import {
     ContentType,
-    deserializeGroupKeyRequest,
-    EncryptedGroupKey,
     EncryptionType,
     GroupKeyRequest,
-    GroupKeyResponse,
     MessageID,
-    serializeGroupKeyResponse,
     SignatureType,
     StreamMessage,
     StreamMessageType,
     StreamPartID,
     StreamPartIDUtils
 } from '@streamr/protocol'
-import { EthereumAddress, Logger } from '@streamr/utils'
+import { EthereumAddress, Logger, utf8ToBinary } from '@streamr/utils'
 import without from 'lodash/without'
 import { Lifecycle, inject, scoped } from 'tsyringe'
 import { Authentication, AuthenticationInjectionToken } from '../Authentication'
@@ -60,10 +56,11 @@ export class PublisherKeyExchange {
     }
 
     private async onMessage(request: StreamMessage): Promise<void> {
-        if (GroupKeyRequest.is(request)) {
+        if (request.messageType === StreamMessageType.GROUP_KEY_REQUEST) {
             try {
                 const authenticatedUser = await this.authentication.getAddress()
-                const { recipient, requestId, rsaPublicKey, groupKeyIds } = deserializeGroupKeyRequest(request.content)
+                // eslint-disable-next-line max-len
+                const { recipient, requestId, rsaPublicKey, groupKeyIds } = request.getParsedContent() as any as GroupKeyRequest // TODO: fix with StreamMessage type generics
                 if (recipient === authenticatedUser) {
                     this.logger.debug('Handling group key request', { requestId })
                     await validateStreamMessage(request, this.streamRegistry)
@@ -105,13 +102,16 @@ export class PublisherKeyExchange {
     ): Promise<StreamMessage> {
         const encryptedGroupKeys = await Promise.all(keys.map((key) => {
             const encryptedGroupKey = EncryptionUtil.encryptWithRSAPublicKey(key.data, rsaPublicKey)
-            return new EncryptedGroupKey(key.id, encryptedGroupKey)
+            return {
+                groupKeyId: key.id,
+                data: encryptedGroupKey
+            }
         }))
-        const responseContent = new GroupKeyResponse({
+        const groupKeyResponse = {
             recipient,
             requestId,
             encryptedGroupKeys
-        })
+        }
         const response = createSignedMessage({
             messageId: new MessageID(
                 StreamPartIDUtils.getStreamID(streamPartId),
@@ -121,7 +121,7 @@ export class PublisherKeyExchange {
                 await this.authentication.getAddress(),
                 createRandomMsgChainId()
             ),
-            content: serializeGroupKeyResponse(responseContent),
+            content: utf8ToBinary(JSON.stringify(groupKeyResponse)),
             messageType: StreamMessageType.GROUP_KEY_RESPONSE,
             encryptionType: EncryptionType.RSA,
             authentication: this.authentication,

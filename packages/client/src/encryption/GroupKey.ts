@@ -67,7 +67,10 @@ export class GroupKey {
 
     /** @internal */
     encryptNextGroupKey(nextGroupKey: GroupKey): EncryptedGroupKey {
-        return new EncryptedGroupKey(nextGroupKey.id, EncryptionUtil.encryptWithAES(nextGroupKey.data, this.data))
+        return {
+            groupKeyId: nextGroupKey.id,
+            data: EncryptionUtil.encryptWithAES(nextGroupKey.data, this.data)
+        }
     }
 
     /** @internal */

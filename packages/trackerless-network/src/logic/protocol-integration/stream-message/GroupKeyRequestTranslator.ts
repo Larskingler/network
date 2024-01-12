@@ -6,23 +6,21 @@ import { toEthereumAddress, binaryToHex, binaryToUtf8, hexToBinary, utf8ToBinary
 export class GroupKeyRequestTranslator {
 
     static toProtobuf(msg: OldGroupKeyRequest): GroupKeyRequest {
-        const translated: GroupKeyRequest = {
-            recipientId: hexToBinary(msg.recipient),
+        return {
             requestId: msg.requestId,
+            recipientId: hexToBinary(msg.recipient),
             rsaPublicKey: utf8ToBinary(msg.rsaPublicKey),
             groupKeyIds: [...msg.groupKeyIds]
         }
-        return translated
     }
 
     static toClientProtocol(msg: GroupKeyRequest): OldGroupKeyRequest {
-        const translated = new OldGroupKeyRequest({
-            recipient: toEthereumAddress(binaryToHex(msg.recipientId, true)),
+        return {
             requestId: msg.requestId,
+            recipient: toEthereumAddress(binaryToHex(msg.recipientId, true)),
             rsaPublicKey: binaryToUtf8(msg.rsaPublicKey),
             groupKeyIds: msg.groupKeyIds
-        })
-        return translated
+        }
     }
 
 }

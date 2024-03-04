@@ -86,7 +86,7 @@ export class TheGraphClient {
     }
 
     private async sendQuery(query: GraphQLQuery): Promise<any> {
-        this.logger.trace('Send GraphQL query', { query })
+        this.logger.info('Send GraphQL query', { query })
         const res = await this.fetch(this.serverUrl, {
             method: 'POST',
             headers: {
@@ -102,7 +102,7 @@ export class TheGraphClient {
         } catch {
             throw new Error(`GraphQL query failed with "${resText}"`)
         }
-        this.logger.trace('Received GraphQL response', { resJson })
+        this.logger.info('Received GraphQL response', { resJsonSize: resText.length })
         if (!resJson.data) {
             if (resJson.errors && resJson.errors.length > 0) {
                 throw new Error('GraphQL query failed: ' + JSON.stringify(resJson.errors.map((e: any) => e.message)))
@@ -167,7 +167,7 @@ class IndexingState {
     }
 
     async waitUntilIndexed(blockNumber: number): Promise<void> {
-        this.logger.debug('Wait until The Graph is synchronized', { blockTarget: blockNumber })
+        this.logger.info('Wait until The Graph is synchronized', { blockTarget: blockNumber })
         const gate = this.getOrCreateGate(blockNumber)
         try {
             await withTimeout(
@@ -202,7 +202,7 @@ class IndexingState {
             const newBlockNumber = await this.getCurrentBlockNumber()
             if (newBlockNumber !== undefined && newBlockNumber !== this.blockNumber) {
                 this.blockNumber = newBlockNumber
-                this.logger.trace('Polled', { blockNumber: this.blockNumber })
+                this.logger.info('Polled', { blockNumber: this.blockNumber })
                 this.gates.forEach((gate) => {
                     if (gate.blockNumber <= this.blockNumber) {
                         gate.open()
@@ -214,6 +214,6 @@ class IndexingState {
                 await wait(this.pollInterval)
             }
         }
-        this.logger.trace('Stop polling')
+        this.logger.info('Stop polling')
     }
 }
